@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Nyati - Checklist Admin</title>
+    <style>
+        body { font-family: sans-serif; background: #f4f7f9; padding: 40px; }
+        .admin-box { background: white; padding: 25px; border-radius: 10px; max-width: 600px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        h2 { color: #004080; border-bottom: 2px solid #E76F2E; padding-bottom: 10px; }
+        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
+        button { background: #004080; color: white; font-weight: bold; cursor: pointer; border: none; }
+        .item-list { margin-top: 30px; }
+        .list-entry { background: #eee; padding: 10px; margin: 5px 0; border-radius: 4px; display: flex; justify-content: space-between; }
+    </style>
+</head>
+<body>
+    <div class="admin-box">
+        <h2>Add New Checklist Point</h2>
+        <select id="category">
+            <option>Column</option>
+            <option>Slab</option>
+            <option>Brickwork</option>
+            <option>Plumbing</option>
+            <option>Safety</option>
+        </select>
+        <input type="text" id="question" placeholder="Enter inspection question (e.g. Check Plumb)">
+        <button onclick="addItem()">ADD TO DATABASE</button>
+
+        <div class="item-list" id="currentItems">
+            <h3>Current Checklist Points:</h3>
+            </div>
+    </div>
+
+    <script>
+        // Database mein naya item bhejney ke liye
+        async function addItem() {
+            const category = document.getElementById('category').value;
+            const questionText = document.getElementById('question').value;
+
+            const response = await fetch('http://localhost:5000/api/add-checklist-item', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ category, questionText })
+            });
+
+            const data = await response.json();
+            if(data.success) {
+                alert("Mubarak ho! Point add ho gaya.");
+                location.reload(); // Refresh to see updated list
+            }
+        }
+
+        // List load karne ke liye (Taki admin dekh sake kya kya hai)
+        async function loadItems() {
+            const res = await fetch('http://localhost:5000/api/checklist-items');
+            const items = await res.json();
+            const listDiv = document.getElementById('currentItems');
+            items.forEach(item => {
+                listDiv.innerHTML += `<div class="list-entry">
+                    <span><b>[${item.category}]</b> ${item.questionText}</span>
+                </div>`;
+            });
+        }
+        loadItems();
+    </script>
+</body>
+</html>
