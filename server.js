@@ -259,31 +259,33 @@ app.post('/api/final-approve-report', upload.array('media', 50), async (req, res
         let fileIndex = 0;
 
         parsedItems.forEach((qeItem) => {
-            if (report.items[qeItem.index]) {
-                const dbItem = report.items[qeItem.index];
-                dbItem.qeDecision = qeItem.qeDecision;
-                dbItem.qeRemark = qeItem.qeRemarks || '';
-                
-                if (qeItem.qeDecision === 'fail') {
-                    dbItem.observation = qeItem.observation || '';
-                    dbItem.contractor = qeItem.contractor || '';
-                    dbItem.targetDate = qeItem.targetDate || '';
-                    
-                    const fileCount = qeItem.fileCount || 0;
-                    const itemFiles = req.files.slice(fileIndex, fileIndex + fileCount);
-                    fileIndex += fileCount;
-                    
-                    if (itemFiles.length > 0) {
-                        // Frontend ke liye images ko mediaUrls mein save kar rahe hain
-                        dbItem.mediaUrls = itemFiles.map(f => `/uploads/${f.filename}`);
-                    }
-                }
+    if (report.items[qeItem.index]) {
+        const dbItem = report.items[qeItem.index];
+        dbItem.qeDecision = qeItem.qeDecision;
+        dbItem.qeRemark = qeItem.qeRemarks || '';
+        
+        if (qeItem.qeDecision === 'fail') {
+            dbItem.observation = qeItem.observation || '';
+            dbItem.contractor = qeItem.contractor || '';
+            dbItem.targetDate = qeItem.targetDate || '';
+            
+            const fileCount = qeItem.fileCount || 0;
+            const itemFiles = req.files.slice(fileIndex, fileIndex + fileCount);
+            fileIndex += fileCount;
+            
+            if (itemFiles.length > 0) {
+                dbItem.mediaUrls = itemFiles.map(f => `/uploads/${f.filename}`);
             }
-        });
+        }
+    }
+});
 
-        report.status = overallStatus;
-        report.markModified('items');
-        await report.save();
+// ✅ ADD KARO YEH LINE
+report.updatedAt = new Date().toLocaleString('en-GB', { hour12: true });
+
+report.status = overallStatus;
+report.markModified('items');
+await report.save();
         
         res.json({ success: true, message: `Report ${overallStatus}!` });
     } catch (err) {

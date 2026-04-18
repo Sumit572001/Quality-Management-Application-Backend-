@@ -27,6 +27,8 @@ const submissionSchema = new mongoose.Schema({
         reworkRemark: { type: String, default: '' },
         reworkMediaUrls: [{ type: String }]
     }],
+    submittedAt: { type: String, default: '' },  // ✅ Add karo
+    updatedAt: { type: String, default: '' },    // ✅ Add karo
     status: { type: String, default: 'Pending' },
     createdAt: { type: Date, default: Date.now }
 });
