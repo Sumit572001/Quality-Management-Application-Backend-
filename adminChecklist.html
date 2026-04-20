@@ -1,66 +1,410 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>Nyati - Checklist Admin</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Nyati - Admin Panel</title>
     <style>
-        body { font-family: sans-serif; background: #f4f7f9; padding: 40px; }
-        .admin-box { background: white; padding: 25px; border-radius: 10px; max-width: 600px; margin: auto; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-        h2 { color: #004080; border-bottom: 2px solid #E76F2E; padding-bottom: 10px; }
-        input, select, button { width: 100%; padding: 12px; margin: 10px 0; border-radius: 5px; border: 1px solid #ccc; box-sizing: border-box; }
-        button { background: #004080; color: white; font-weight: bold; cursor: pointer; border: none; }
-        .item-list { margin-top: 30px; }
-        .list-entry { background: #eee; padding: 10px; margin: 5px 0; border-radius: 4px; display: flex; justify-content: space-between; }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: sans-serif; background: #f0f4f8; min-height: 100vh; }
+
+        /* NAVBAR */
+        .navbar { background: #004080; color: white; padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
+        .navbar h1 { font-size: 14px; font-weight: 900; letter-spacing: 1px; }
+        .logout-btn { background: #dc2626; color: white; border: none; padding: 6px 14px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; }
+
+        /* TABS */
+        .tabs { display: flex; background: white; border-bottom: 2px solid #e5e7eb; overflow-x: auto; }
+        .tab { padding: 12px 16px; font-size: 11px; font-weight: bold; color: #6b7280; cursor: pointer; white-space: nowrap; border-bottom: 3px solid transparent; transition: all 0.2s; }
+        .tab.active { color: #004080; border-bottom-color: #004080; }
+
+        /* SECTIONS */
+        .section { display: none; padding: 16px; max-width: 500px; margin: 0 auto; }
+        .section.active { display: block; }
+
+        /* CARDS */
+        .card { background: white; border-radius: 16px; padding: 16px; margin-bottom: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+        .card-title { font-size: 11px; font-weight: 900; color: #004080; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 2px solid #e5e7eb; }
+
+        /* FORM ELEMENTS */
+        label { font-size: 10px; font-weight: bold; color: #9ca3af; text-transform: uppercase; display: block; margin-bottom: 4px; margin-left: 4px; }
+        input, select, textarea { width: 100%; padding: 10px 12px; border: 1.5px solid #e5e7eb; border-radius: 10px; font-size: 13px; outline: none; margin-bottom: 12px; background: white; }
+        input:focus, select:focus { border-color: #004080; }
+
+        /* BUTTONS */
+        .btn-primary { width: 100%; padding: 14px; background: #004080; color: white; font-weight: 900; font-size: 13px; border: none; border-radius: 12px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; }
+        .btn-primary:active { opacity: 0.9; transform: scale(0.98); }
+        .btn-danger { background: #fee2e2; color: #dc2626; border: none; padding: 6px 10px; border-radius: 8px; font-size: 11px; font-weight: bold; cursor: pointer; }
+
+        /* LIST ITEMS */
+        .list-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 12px; background: #f9fafb; border-radius: 10px; margin-bottom: 8px; border: 1px solid #e5e7eb; }
+        .list-item-text { flex: 1; }
+        .list-item-label { font-size: 9px; font-weight: 900; color: #E76F2E; text-transform: uppercase; letter-spacing: 0.5px; }
+        .list-item-value { font-size: 12px; font-weight: bold; color: #1f2937; margin-top: 2px; }
+        .count-badge { background: #dbeafe; color: #1d4ed8; font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 20px; display: inline-block; margin-left: 8px; }
+
+        /* EMPTY STATE */
+        .empty { text-align: center; padding: 30px; color: #d1d5db; font-size: 12px; font-weight: bold; text-transform: uppercase; }
+
+        /* SUCCESS MSG */
+        .success-msg { background: #d1fae5; color: #065f46; padding: 10px 14px; border-radius: 10px; font-size: 12px; font-weight: bold; margin-bottom: 12px; display: none; }
     </style>
 </head>
 <body>
-    <div class="admin-box">
-        <h2>Add New Checklist Point</h2>
-        <select id="category">
-            <option>Column</option>
-            <option>Slab</option>
-            <option>Brickwork</option>
-            <option>Plumbing</option>
-            <option>Safety</option>
-        </select>
-        <input type="text" id="question" placeholder="Enter inspection question (e.g. Check Plumb)">
-        <button onclick="addItem()">ADD TO DATABASE</button>
 
-        <div class="item-list" id="currentItems">
-            <h3>Current Checklist Points:</h3>
-            </div>
+<div class="navbar">
+    <h1>⚙️ NYATI ADMIN</h1>
+    <button class="logout-btn" onclick="handleLogout()">LOGOUT</button>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+    <div class="tab active" onclick="showTab('checklist')">📋 Checklist</div>
+    <div class="tab" onclick="showTab('category')">🏷️ Category</div>
+    <div class="tab" onclick="showTab('building')">🏢 Building</div>
+    <div class="tab" onclick="showTab('floor')">🪜 Floor</div>
+    <div class="tab" onclick="showTab('unit')">🏠 Unit/Area</div>
+</div>
+
+<!-- ===== CHECKLIST TAB ===== -->
+<div id="tab-checklist" class="section active">
+    <div class="card">
+        <div class="card-title">➕ New Checklist Point</div>
+        <label>Category</label>
+        <select id="cl-category"></select>
+        <label>Inspection Question</label>
+        <input type="text" id="cl-question" placeholder="Enter inspection point...">
+        <div id="cl-success" class="success-msg">✅ Point added successfully!</div>
+        <button class="btn-primary" onclick="addChecklistItem()">ADD TO DATABASE</button>
     </div>
 
-    <script>
-        // Database mein naya item bhejney ke liye
-        async function addItem() {
-            const category = document.getElementById('category').value;
-            const questionText = document.getElementById('question').value;
+    <div class="card">
+        <div class="card-title">
+            Current Points
+            <span class="count-badge" id="cl-count">0</span>
+        </div>
+        <div id="cl-list"></div>
+    </div>
+</div>
 
-            const response = await fetch('http://localhost:5000/api/add-checklist-item', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ category, questionText })
-            });
+<!-- ===== CATEGORY TAB ===== -->
+<div id="tab-category" class="section">
+    <div class="card">
+        <div class="card-title">➕ New Category</div>
+        <label>Category Name</label>
+        <input type="text" id="cat-name" placeholder="e.g. Plumbing, Electrical...">
+        <div id="cat-success" class="success-msg">✅ Category added!</div>
+        <button class="btn-primary" onclick="addCategory()">ADD CATEGORY</button>
+    </div>
 
-            const data = await response.json();
-            if(data.success) {
-                alert("Mubarak ho! Point add ho gaya.");
-                location.reload(); // Refresh to see updated list
-            }
-        }
+    <div class="card">
+        <div class="card-title">
+            All Categories
+            <span class="count-badge" id="cat-count">0</span>
+        </div>
+        <div id="cat-list"></div>
+    </div>
+</div>
 
-        // List load karne ke liye (Taki admin dekh sake kya kya hai)
-        async function loadItems() {
-            const res = await fetch('http://localhost:5000/api/checklist-items');
-            const items = await res.json();
-            const listDiv = document.getElementById('currentItems');
-            items.forEach(item => {
-                listDiv.innerHTML += `<div class="list-entry">
-                    <span><b>[${item.category}]</b> ${item.questionText}</span>
+<!-- ===== BUILDING TAB ===== -->
+<div id="tab-building" class="section">
+    <div class="card">
+        <div class="card-title">➕ New Building</div>
+        <label>Building Name</label>
+        <input type="text" id="bld-name" placeholder="e.g. Tower A, Block B...">
+        <div id="bld-success" class="success-msg">✅ Building added!</div>
+        <button class="btn-primary" onclick="addBuilding()">ADD BUILDING</button>
+    </div>
+
+    <div class="card">
+        <div class="card-title">
+            All Buildings
+            <span class="count-badge" id="bld-count">0</span>
+        </div>
+        <div id="bld-list"></div>
+    </div>
+</div>
+
+<!-- ===== FLOOR TAB ===== -->
+<div id="tab-floor" class="section">
+    <div class="card">
+        <div class="card-title">➕ New Floor</div>
+        <label>Floor Name</label>
+        <input type="text" id="flr-name" placeholder="e.g. Ground Floor, 1st Floor...">
+        <div id="flr-success" class="success-msg">✅ Floor added!</div>
+        <button class="btn-primary" onclick="addFloor()">ADD FLOOR</button>
+    </div>
+
+    <div class="card">
+        <div class="card-title">
+            All Floors
+            <span class="count-badge" id="flr-count">0</span>
+        </div>
+        <div id="flr-list"></div>
+    </div>
+</div>
+
+<!-- ===== UNIT/AREA TAB ===== -->
+<div id="tab-unit" class="section">
+    <div class="card">
+        <div class="card-title">➕ New Unit / Area Type</div>
+        <label>Unit/Area Name</label>
+        <input type="text" id="unit-name" placeholder="e.g. 2BHK, Shop, Office...">
+        <div id="unit-success" class="success-msg">✅ Unit/Area added!</div>
+        <button class="btn-primary" onclick="addUnit()">ADD UNIT/AREA</button>
+    </div>
+
+    <div class="card">
+        <div class="card-title">
+            All Units/Areas
+            <span class="count-badge" id="unit-count">0</span>
+        </div>
+        <div id="unit-list"></div>
+    </div>
+</div>
+
+<script>
+    const BASE_URL = 'http://192.168.12.93:5000';
+
+    // ===== TAB SYSTEM =====
+    function showTab(tabName) {
+        document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.getElementById('tab-' + tabName).classList.add('active');
+        event.target.classList.add('active');
+
+        if (tabName === 'checklist') { loadCategories(); loadChecklistItems(); }
+        if (tabName === 'category') loadCategories();
+        if (tabName === 'building') loadBuildings();
+        if (tabName === 'floor') loadFloors();
+        if (tabName === 'unit') loadUnits();
+    }
+
+    function showSuccess(id) {
+        const el = document.getElementById(id);
+        el.style.display = 'block';
+        setTimeout(() => el.style.display = 'none', 2500);
+    }
+
+    function handleLogout() {
+        localStorage.removeItem('nyati_user');
+        window.location.href = '/';
+    }
+
+    // ===== CHECKLIST =====
+    async function loadChecklistItems() {
+        const res = await fetch(`${BASE_URL}/api/checklist-items`);
+        const items = await res.json();
+        document.getElementById('cl-count').textContent = items.length;
+        const list = document.getElementById('cl-list');
+        list.innerHTML = items.length === 0 ? '<div class="empty">No items yet</div>' : '';
+        items.forEach(item => {
+            list.innerHTML += `
+                <div class="list-item">
+                    <div class="list-item-text">
+                        <div class="list-item-label">${item.category}</div>
+                        <div class="list-item-value">${item.questionText}</div>
+                    </div>
+                    <button class="btn-danger" onclick="deleteChecklist('${item._id}')">🗑️</button>
                 </div>`;
-            });
+        });
+    }
+
+    async function addChecklistItem() {
+        const category = document.getElementById('cl-category').value;
+        const questionText = document.getElementById('cl-question').value.trim();
+        if (!category || !questionText) return alert('Category aur question dono fill karein!');
+        const res = await fetch(`${BASE_URL}/api/add-checklist-item`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ category, questionText })
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('cl-question').value = '';
+            showSuccess('cl-success');
+            loadChecklistItems();
         }
-        loadItems();
-    </script>
+    }
+
+    async function deleteChecklist(id) {
+        if (!confirm('Delete this item?')) return;
+        await fetch(`${BASE_URL}/api/delete-checklist-item/${id}`, { method: 'DELETE' });
+        loadChecklistItems();
+    }
+
+    // ===== CATEGORY =====
+    async function loadCategories() {
+        const res = await fetch(`${BASE_URL}/api/categories`);
+        const items = await res.json();
+
+        // Checklist dropdown update
+        const sel = document.getElementById('cl-category');
+        if (sel) {
+            sel.innerHTML = items.map(i => `<option value="${i.name}">${i.name}</option>`).join('');
+        }
+
+        // Category list
+        const list = document.getElementById('cat-list');
+        if (!list) return;
+        document.getElementById('cat-count').textContent = items.length;
+        list.innerHTML = items.length === 0 ? '<div class="empty">No categories yet</div>' : '';
+        items.forEach(item => {
+            list.innerHTML += `
+                <div class="list-item">
+                    <div class="list-item-text">
+                        <div class="list-item-value">🏷️ ${item.name}</div>
+                    </div>
+                    <button class="btn-danger" onclick="deleteCategory('${item._id}')">🗑️</button>
+                </div>`;
+        });
+    }
+
+    async function addCategory() {
+        const name = document.getElementById('cat-name').value.trim();
+        if (!name) return alert('Category naam daalo!');
+        const res = await fetch(`${BASE_URL}/api/categories`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('cat-name').value = '';
+            showSuccess('cat-success');
+            loadCategories();
+        }
+    }
+
+    async function deleteCategory(id) {
+        if (!confirm('Delete this category?')) return;
+        await fetch(`${BASE_URL}/api/categories/${id}`, { method: 'DELETE' });
+        loadCategories();
+    }
+
+    // ===== BUILDING =====
+    async function loadBuildings() {
+        const res = await fetch(`${BASE_URL}/api/buildings`);
+        const items = await res.json();
+        document.getElementById('bld-count').textContent = items.length;
+        const list = document.getElementById('bld-list');
+        list.innerHTML = items.length === 0 ? '<div class="empty">No buildings yet</div>' : '';
+        items.forEach(item => {
+            list.innerHTML += `
+                <div class="list-item">
+                    <div class="list-item-text">
+                        <div class="list-item-value">🏢 ${item.name}</div>
+                    </div>
+                    <button class="btn-danger" onclick="deleteBuilding('${item._id}')">🗑️</button>
+                </div>`;
+        });
+    }
+
+    async function addBuilding() {
+        const name = document.getElementById('bld-name').value.trim();
+        if (!name) return alert('Building naam daalo!');
+        const res = await fetch(`${BASE_URL}/api/buildings`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('bld-name').value = '';
+            showSuccess('bld-success');
+            loadBuildings();
+        }
+    }
+
+    async function deleteBuilding(id) {
+        if (!confirm('Delete this building?')) return;
+        await fetch(`${BASE_URL}/api/buildings/${id}`, { method: 'DELETE' });
+        loadBuildings();
+    }
+
+    // ===== FLOOR =====
+    async function loadFloors() {
+        const res = await fetch(`${BASE_URL}/api/floors`);
+        const items = await res.json();
+        document.getElementById('flr-count').textContent = items.length;
+        const list = document.getElementById('flr-list');
+        list.innerHTML = items.length === 0 ? '<div class="empty">No floors yet</div>' : '';
+        items.forEach(item => {
+            list.innerHTML += `
+                <div class="list-item">
+                    <div class="list-item-text">
+                        <div class="list-item-value">🪜 ${item.name}</div>
+                    </div>
+                    <button class="btn-danger" onclick="deleteFloor('${item._id}')">🗑️</button>
+                </div>`;
+        });
+    }
+
+    async function addFloor() {
+        const name = document.getElementById('flr-name').value.trim();
+        if (!name) return alert('Floor naam daalo!');
+        const res = await fetch(`${BASE_URL}/api/floors`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('flr-name').value = '';
+            showSuccess('flr-success');
+            loadFloors();
+        }
+    }
+
+    async function deleteFloor(id) {
+        if (!confirm('Delete this floor?')) return;
+        await fetch(`${BASE_URL}/api/floors/${id}`, { method: 'DELETE' });
+        loadFloors();
+    }
+
+    // ===== UNIT/AREA =====
+    async function loadUnits() {
+        const res = await fetch(`${BASE_URL}/api/units`);
+        const items = await res.json();
+        document.getElementById('unit-count').textContent = items.length;
+        const list = document.getElementById('unit-list');
+        list.innerHTML = items.length === 0 ? '<div class="empty">No units yet</div>' : '';
+        items.forEach(item => {
+            list.innerHTML += `
+                <div class="list-item">
+                    <div class="list-item-text">
+                        <div class="list-item-value">🏠 ${item.name}</div>
+                    </div>
+                    <button class="btn-danger" onclick="deleteUnit('${item._id}')">🗑️</button>
+                </div>`;
+        });
+    }
+
+    async function addUnit() {
+        const name = document.getElementById('unit-name').value.trim();
+        if (!name) return alert('Unit/Area naam daalo!');
+        const res = await fetch(`${BASE_URL}/api/units`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name })
+        });
+        const data = await res.json();
+        if (data.success) {
+            document.getElementById('unit-name').value = '';
+            showSuccess('unit-success');
+            loadUnits();
+        }
+    }
+
+    async function deleteUnit(id) {
+        if (!confirm('Delete this unit?')) return;
+        await fetch(`${BASE_URL}/api/units/${id}`, { method: 'DELETE' });
+        loadUnits();
+    }
+
+    // ===== INIT =====
+    loadCategories();
+    loadChecklistItems();
+</script>
 </body>
 </html>

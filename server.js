@@ -250,7 +250,8 @@ app.get('/api/qe/rework-approvals', async (req, res) => {
 
 app.post('/api/final-approve-report', upload.array('media', 50), async (req, res) => {
     try {
-        const { id, itemsData, overallStatus } = req.body;
+        // 1. req.body se qeName ko bhi extract karein
+        const { id, itemsData, overallStatus, qeName } = req.body; 
         const report = await Submission.findById(id);
         
         if (!report) return res.status(404).json({ success: false, message: "Report nahi mili!" });
@@ -259,33 +260,37 @@ app.post('/api/final-approve-report', upload.array('media', 50), async (req, res
         let fileIndex = 0;
 
         parsedItems.forEach((qeItem) => {
-    if (report.items[qeItem.index]) {
-        const dbItem = report.items[qeItem.index];
-        dbItem.qeDecision = qeItem.qeDecision;
-        dbItem.qeRemark = qeItem.qeRemarks || '';
-        
-        if (qeItem.qeDecision === 'fail') {
-            dbItem.observation = qeItem.observation || '';
-            dbItem.contractor = qeItem.contractor || '';
-            dbItem.targetDate = qeItem.targetDate || '';
-            
-            const fileCount = qeItem.fileCount || 0;
-            const itemFiles = req.files.slice(fileIndex, fileIndex + fileCount);
-            fileIndex += fileCount;
-            
-            if (itemFiles.length > 0) {
-                dbItem.mediaUrls = itemFiles.map(f => `/uploads/${f.filename}`);
+            if (report.items[qeItem.index]) {
+                const dbItem = report.items[qeItem.index];
+                dbItem.qeDecision = qeItem.qeDecision;
+                dbItem.qeRemark = qeItem.qeRemarks || '';
+                
+                if (qeItem.qeDecision === 'fail') {
+                    dbItem.observation = qeItem.observation || '';
+                    dbItem.contractor = qeItem.contractor || '';
+                    dbItem.targetDate = qeItem.targetDate || '';
+                    
+                    const fileCount = qeItem.fileCount || 0;
+                    const itemFiles = req.files.slice(fileIndex, fileIndex + fileCount);
+                    fileIndex += fileCount;
+                    
+                    if (itemFiles.length > 0) {
+                        dbItem.mediaUrls = itemFiles.map(f => `/uploads/${f.filename}`);
+                    }
+                }
             }
-        }
-    }
-});
+        });
 
-// ✅ ADD KARO YEH LINE
-report.updatedAt = new Date().toLocaleString('en-GB', { hour12: true });
+        // 2. Database mein QE ka naam save karne ke liye line add ki hai
+        // Agar frontend se qeName nahi aayega toh default 'Quality Engineer' rahega
+        report.qeName = qeName || 'Quality Engineer';
 
-report.status = overallStatus;
-report.markModified('items');
-await report.save();
+        // ✅ Date & Time update logic
+        report.updatedAt = new Date().toLocaleString('en-GB', { hour12: true });
+
+        report.status = overallStatus;
+        report.markModified('items');
+        await report.save();
         
         res.json({ success: true, message: `Report ${overallStatus}!` });
     } catch (err) {
@@ -343,6 +348,90 @@ app.get('/api/my-reports', async (req, res) => {
     } catch (err) {
         res.status(500).json({ success: false, message: "Error" });
     }
+});
+
+// ===== ADMIN: CATEGORY APIs =====
+const categorySchema = new mongoose.Schema({ name: String });
+const Category = mongoose.model('Category', categorySchema);
+
+app.get('/api/categories', async (req, res) => {
+    try { res.json(await Category.find().sort({ _id: 1 })); }
+    catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.post('/api/categories', async (req, res) => {
+    try {
+        await new Category({ name: req.body.name }).save();
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.delete('/api/categories/:id', async (req, res) => {
+    try {
+        await Category.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ===== ADMIN: BUILDING APIs =====
+const buildingSchema = new mongoose.Schema({ name: String });
+const Building = mongoose.model('Building', buildingSchema);
+
+app.get('/api/buildings', async (req, res) => {
+    try { res.json(await Building.find().sort({ _id: 1 })); }
+    catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.post('/api/buildings', async (req, res) => {
+    try {
+        await new Building({ name: req.body.name }).save();
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.delete('/api/buildings/:id', async (req, res) => {
+    try {
+        await Building.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ===== ADMIN: FLOOR APIs =====
+const floorSchema = new mongoose.Schema({ name: String });
+const Floor = mongoose.model('Floor', floorSchema);
+
+app.get('/api/floors', async (req, res) => {
+    try { res.json(await Floor.find().sort({ _id: 1 })); }
+    catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.post('/api/floors', async (req, res) => {
+    try {
+        await new Floor({ name: req.body.name }).save();
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.delete('/api/floors/:id', async (req, res) => {
+    try {
+        await Floor.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ===== ADMIN: UNIT/AREA APIs =====
+const unitSchema = new mongoose.Schema({ name: String });
+const Unit = mongoose.model('Unit', unitSchema);
+
+app.get('/api/units', async (req, res) => {
+    try { res.json(await Unit.find().sort({ _id: 1 })); }
+    catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.post('/api/units', async (req, res) => {
+    try {
+        await new Unit({ name: req.body.name }).save();
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+app.delete('/api/units/:id', async (req, res) => {
+    try {
+        await Unit.findByIdAndDelete(req.params.id);
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 const PORT = 5000;
