@@ -355,7 +355,7 @@ const categorySchema = new mongoose.Schema({ name: String });
 const Category = mongoose.model('Category', categorySchema);
 
 app.get('/api/categories', async (req, res) => {
-    try { res.json(await Category.find().sort({ _id: 1 })); }
+    try { res.json(await Category.find().sort({ name: 1 })); }
     catch (err) { res.status(500).json({ error: err.message }); }
 });
 app.post('/api/categories', async (req, res) => {
@@ -376,14 +376,18 @@ const buildingSchema = new mongoose.Schema({ name: String });
 const Building = mongoose.model('Building', buildingSchema);
 
 app.get('/api/buildings', async (req, res) => {
-    try { res.json(await Building.find().sort({ _id: 1 })); }
+    try { res.json(await Building.find().sort({ name: 1 })); }
     catch (err) { res.status(500).json({ error: err.message }); }
 });
+// Example for Buildings (Yahi logic Floor aur Unit mein bhi laga sakte hain)
 app.post('/api/buildings', async (req, res) => {
     try {
+        if (!req.body.name) return res.status(400).json({ error: "Name is required" }); // Check if name is empty
         await new Building({ name: req.body.name }).save();
         res.json({ success: true });
-    } catch (err) { res.status(500).json({ error: err.message }); }
+    } catch (err) { 
+        res.status(500).json({ error: err.message }); 
+    }
 });
 app.delete('/api/buildings/:id', async (req, res) => {
     try {
@@ -397,7 +401,7 @@ const floorSchema = new mongoose.Schema({ name: String });
 const Floor = mongoose.model('Floor', floorSchema);
 
 app.get('/api/floors', async (req, res) => {
-    try { res.json(await Floor.find().sort({ _id: 1 })); }
+    try { res.json(await Floor.find().sort({ name: 1 })); }
     catch (err) { res.status(500).json({ error: err.message }); }
 });
 app.post('/api/floors', async (req, res) => {
@@ -418,7 +422,7 @@ const unitSchema = new mongoose.Schema({ name: String });
 const Unit = mongoose.model('Unit', unitSchema);
 
 app.get('/api/units', async (req, res) => {
-    try { res.json(await Unit.find().sort({ _id: 1 })); }
+    try { res.json(await Unit.find().sort({ name: 1 })); }
     catch (err) { res.status(500).json({ error: err.message }); }
 });
 app.post('/api/units', async (req, res) => {
