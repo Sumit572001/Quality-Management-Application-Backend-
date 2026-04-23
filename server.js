@@ -5,7 +5,7 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
-const User = require('./models/User'); 
+const User = require('./models/User');
 const { ChecklistItem, Submission } = require('./models/Checklist');
 
 const app = express();
@@ -21,10 +21,10 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-app.use(express.json({ limit: '100mb' })); 
+app.use(express.json({ limit: '100mb' }));
 app.use(express.urlencoded({ limit: '100mb', extended: true }));
 app.use(cors({
-    origin: '*', 
+    origin: '*',
     methods: ['GET', 'POST', 'DELETE', 'UPDATE', 'PUT', 'PATCH'],
     allowedHeaders: ['Content-Type', 'Authorization']
 }));
@@ -49,9 +49,9 @@ app.post('/api/login', async (req, res) => {
         const { username, password } = req.body;
         const user = await User.findOne({ username, password });
         if (user) {
-            res.json({ 
-                success: true, 
-                role: user.role, 
+            res.json({
+                success: true,
+                role: user.role,
                 fullName: user.fullName,
                 siteName: user.siteName,
                 block: user.block,
@@ -111,7 +111,7 @@ app.get('/api/rework-reports', async (req, res) => {
     try {
         const userName = req.query.user;
         if (!userName) return res.status(400).json({ error: "User name missing" });
-        const reworkReports = await Submission.find({ 
+        const reworkReports = await Submission.find({
             submittedBy: userName,
             status: { $in: ['Returned', 'Rework Submitted'] }
         }).sort({ _id: -1 });
@@ -206,7 +206,7 @@ app.get('/api/qe/rework-approvals', async (req, res) => {
 
 app.post('/api/final-approve-report', upload.array('media', 50), async (req, res) => {
     try {
-        const { id, itemsData, overallStatus, qeName } = req.body; 
+        const { id, itemsData, overallStatus, qeName } = req.body;
         const report = await Submission.findById(id);
         if (!report) return res.status(404).json({ success: false, message: "Report nahi mili!" });
         const parsedItems = JSON.parse(itemsData);
@@ -253,7 +253,7 @@ app.post('/api/qe/rework-final-status', async (req, res) => {
 
 app.get('/api/my-reports', async (req, res) => {
     try {
-        const userName = req.query.user; 
+        const userName = req.query.user;
         const reports = await Submission.find({ submittedBy: userName }).sort({ _id: -1 });
         res.json(reports);
     } catch (err) {
@@ -305,18 +305,18 @@ app.delete('/api/buildings/:id', async (req, res) => {
 });
 
 // ===== ADMIN: FLOOR APIs (UPDATED: Added Building Filter) =====
-const floorSchema = new mongoose.Schema({ 
+const floorSchema = new mongoose.Schema({
     name: String,
     buildingName: String // Added for dynamic link
 });
 const Floor = mongoose.model('Floor', floorSchema);
 
 app.get('/api/floors', async (req, res) => {
-    try { 
+    try {
         const { building } = req.query; // Check if building filter is passed
         let query = {};
         if (building) query.buildingName = building;
-        const floors = await Floor.find(query).sort({ name: 1 }); 
+        const floors = await Floor.find(query).sort({ name: 1 });
         res.json(floors);
     }
     catch (err) { res.status(500).json({ error: err.message }); }
@@ -336,26 +336,28 @@ app.delete('/api/floors/:id', async (req, res) => {
 });
 
 // ===== ADMIN: UNIT/AREA APIs (UPDATED: Added Floor Filter) =====
-const unitSchema = new mongoose.Schema({ 
+const unitSchema = new mongoose.Schema({
     name: String,
-    floorName: String // Added for dynamic link
+    floorName: String, // Added for dynamic link
+    buildingName: String // Added to prevent cross-building floor name conflicts
 });
 const Unit = mongoose.model('Unit', unitSchema);
 
 app.get('/api/units', async (req, res) => {
-    try { 
-        const { floor } = req.query; // Check if floor filter is passed
+    try {
+        const { floor, building } = req.query; // Check if floor/building filter is passed
         let query = {};
         if (floor) query.floorName = floor;
-        const units = await Unit.find(query).sort({ name: 1 }); 
+        if (building) query.buildingName = building;
+        const units = await Unit.find(query).sort({ name: 1 });
         res.json(units);
     }
     catch (err) { res.status(500).json({ error: err.message }); }
 });
 app.post('/api/units', async (req, res) => {
     try {
-        const { name, floorName } = req.body; // Added floorName while saving
-        await new Unit({ name, floorName }).save();
+        const { name, floorName, buildingName } = req.body; // Added floorName and buildingName while saving
+        await new Unit({ name, floorName, buildingName }).save();
         res.json({ success: true });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
