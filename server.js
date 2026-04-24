@@ -344,12 +344,13 @@ const unitSchema = new mongoose.Schema({
 const Unit = mongoose.model('Unit', unitSchema);
 
 app.get('/api/units', async (req, res) => {
-    try {
-        const { floor, building } = req.query; // Check if floor/building filter is passed
+    try { 
+        const { floor, building } = req.query;
         let query = {};
         if (floor) query.floorName = floor;
-        if (building) query.buildingName = building;
-        const units = await Unit.find(query).sort({ name: 1 });
+        // ✅ Building filter bhi add karo
+        if (building && !floor) query.buildingName = building;
+        const units = await Unit.find(query).sort({ name: 1 }); 
         res.json(units);
     }
     catch (err) { res.status(500).json({ error: err.message }); }
