@@ -127,12 +127,44 @@ app.get('/api/history-reports', async (req, res) => {
         if (!userName) return res.status(400).json({ error: "User name missing" });
         const reports = await Submission.find({
             submittedBy: userName,
-            status: { $in: ['Approved', 'Returned', 'Rework Submitted'] }
+            status: 'Approved'
         }).sort({ _id: -1 });
-        const filtered = reports.filter(r => r.items.some(i => i.qeDecision === 'pass'));
+        const filtered = reports.filter(r => r.items.every(i => i.qeDecision === 'pass'));
         res.json(filtered);
     } catch (err) {
         res.status(500).json({ error: "History fetch error: " + err.message });
+    }
+});
+
+app.get('/api/se-dashboard-stats', async (req, res) => {
+    try {
+        const { seName } = req.query;
+        const today = new Date().toLocaleDateString('en-GB');
+        const [allReports, reworkReports] = await Promise.all([
+            Submission.find({ submittedBy: seName }).sort({ _id: -1 }),
+            Submission.find({ submittedBy: seName, status: { $in: ['Returned', 'Rework Submitted'] } })
+        ]);
+        const todayTasks = allReports.filter(r => r.date === today).length;
+        const reworkCount = reworkReports.length;
+        let totalItems = 0;
+        let passedItems = 0;
+        allReports.forEach(r => {
+            r.items.forEach(it => {
+                if (it.qeDecision) {
+                    totalItems++;
+                    if (it.qeDecision === 'pass') passedItems++;
+                }
+            });
+        });
+        const compliance = totalItems > 0 ? Math.round((passedItems / totalItems) * 100) : 0;
+        res.json({
+            todayTasks,
+            reworkCount,
+            compliance,
+            recentActivity: allReports.slice(0, 5)
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
@@ -201,6 +233,35 @@ app.get('/api/qe/rework-approvals', async (req, res) => {
         res.json(reworks);
     } catch (err) {
         res.status(500).json({ error: "Error: " + err.message });
+    }
+});
+
+app.get('/api/qe-dashboard-stats', async (req, res) => {
+    try {
+        const today = new Date().toLocaleDateString('en-GB');
+        const [pending, reworks, all] = await Promise.all([
+            Submission.find({ status: 'Pending' }),
+            Submission.find({ status: 'Rework Submitted' }),
+            Submission.find()
+        ]);
+        const criticalDefects = pending.filter(r => r.date === today && r.items?.some(i => i.qeDecision === 'fail')).length;
+        const total = all.length || 1;
+        const approved = all.filter(r => r.status === 'Approved').length;
+        const pnd = all.filter(r => r.status === 'Pending' || r.status === 'Rework Submitted').length;
+        const ret = all.filter(r => r.status === 'Returned').length;
+
+        res.json({
+            pendingApprovals: pending.length,
+            criticalDefects,
+            waitingRework: reworks.length,
+            projectHealth: {
+                approved: Math.round((approved / total) * 100),
+                pending: Math.round((pnd / total) * 100),
+                returned: Math.round((ret / total) * 100)
+            }
+        });
+    } catch (err) {
+        res.status(500).json({ error: err.message });
     }
 });
 
