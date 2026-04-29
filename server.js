@@ -136,6 +136,20 @@ app.get('/api/history-reports', async (req, res) => {
     }
 });
 
+app.get('/api/pending-reports', async (req, res) => {
+    try {
+        const userName = req.query.user;
+        if (!userName) return res.status(400).json({ error: "User name missing" });
+        const reports = await Submission.find({
+            submittedBy: userName,
+            status: 'Pending'
+        }).sort({ _id: -1 });
+        res.json(reports);
+    } catch (err) {
+        res.status(500).json({ error: "Pending fetch error: " + err.message });
+    }
+});
+
 app.get('/api/se-dashboard-stats', async (req, res) => {
     try {
         const { seName } = req.query;
@@ -231,6 +245,15 @@ app.get('/api/qe/rework-approvals', async (req, res) => {
     try {
         const reworks = await Submission.find({ status: 'Rework Submitted' }).sort({ _id: -1 });
         res.json(reworks);
+    } catch (err) {
+        res.status(500).json({ error: "Error: " + err.message });
+    }
+});
+
+app.get('/api/qe/returned-reports', async (req, res) => {
+    try {
+        const returned = await Submission.find({ status: 'Returned' }).sort({ _id: -1 });
+        res.json(returned);
     } catch (err) {
         res.status(500).json({ error: "Error: " + err.message });
     }
@@ -405,13 +428,13 @@ const unitSchema = new mongoose.Schema({
 const Unit = mongoose.model('Unit', unitSchema);
 
 app.get('/api/units', async (req, res) => {
-    try { 
+    try {
         const { floor, building } = req.query;
         let query = {};
         if (floor) query.floorName = floor;
         // ✅ Building filter bhi add karo
         if (building && !floor) query.buildingName = building;
-        const units = await Unit.find(query).sort({ name: 1 }); 
+        const units = await Unit.find(query).sort({ name: 1 });
         res.json(units);
     }
     catch (err) { res.status(500).json({ error: err.message }); }
