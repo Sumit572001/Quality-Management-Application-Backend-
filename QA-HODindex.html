@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,7 +13,8 @@
             --danger-red: #dc3545;
             --success-green: #28a745;
             --warning-orange: #f39c12;
-            --light-bg: #f4f7f9; /* Yeh background gap dikhayega */
+            --light-bg: #f4f7f9;
+            /* Yeh background gap dikhayega */
             --white: #ffffff;
         }
 
@@ -25,9 +27,14 @@
 
         #login-overlay {
             position: fixed;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
             background: linear-gradient(135deg, var(--primary-blue), #002a54);
-            display: flex; justify-content: center; align-items: center;
+            display: flex;
+            justify-content: center;
+            align-items: center;
             z-index: 9999;
         }
 
@@ -35,116 +42,216 @@
             background: var(--white);
             padding: 40px;
             border-radius: 15px;
-            box-shadow: 0 15px 35px rgba(0,0,0,0.4);
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.4);
             width: 380px;
             text-align: center;
         }
 
         .login-card input {
-            width: 100%; padding: 12px; margin: 10px 0;
-            border: 1px solid #ddd; border-radius: 8px; box-sizing: border-box;
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            box-sizing: border-box;
         }
 
         .btn-login {
-            width: 100%; padding: 12px; background: var(--secondary-blue);
-            color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: bold;
+            width: 100%;
+            padding: 12px;
+            background: var(--secondary-blue);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: bold;
         }
 
         /* --- DASHBOARD STRUCTURE (FIXED GAP) --- */
-        #dashboard-wrapper { display: flex; min-height: 100vh; }
+        #dashboard-wrapper {
+            display: flex;
+            min-height: 100vh;
+        }
 
         .sidebar {
-            width: 260px; 
-            background: var(--primary-blue); 
+            width: 260px;
+            background: var(--primary-blue);
             height: 100vh;
-            color: white; 
-            padding: 25px; 
+            color: white;
+            padding: 25px;
             position: fixed;
             display: flex;
             flex-direction: column;
-            box-shadow: 4px 0 15px rgba(0,0,0,0.1);
+            box-shadow: 4px 0 15px rgba(0, 0, 0, 0.1);
             z-index: 100;
         }
 
-        .sidebar h2 { 
-            font-size: 16px; border-bottom: 1px solid rgba(255,255,255,0.2); 
-            padding-bottom: 15px; text-transform: uppercase; letter-spacing: 1px;
+        .sidebar h2 {
+            font-size: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            padding-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
             margin-bottom: 20px;
         }
 
-        .nav-container { flex-grow: 1; }
-
-        .nav-item { 
-            padding: 15px 12px; cursor: pointer; border-radius: 8px; 
-            margin-bottom: 5px; transition: 0.3s;
+        .nav-container {
+            flex-grow: 1;
         }
-        .nav-item:hover { background: rgba(255,255,255,0.1); color: var(--secondary-blue); }
+
+        .nav-item {
+            padding: 15px 12px;
+            cursor: pointer;
+            border-radius: 8px;
+            margin-bottom: 5px;
+            transition: 0.3s;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--secondary-blue);
+        }
 
         .logout-section {
             padding-top: 20px;
-            border-top: 1px solid rgba(255,255,255,0.2);
+            border-top: 1px solid rgba(255, 255, 255, 0.2);
             margin-bottom: 20px;
         }
 
         /* --- UPDATE: YAHAN SE GAP START HOTA HAI --- */
-        .main-content { 
-            margin-left: 285px; /* Sidebar (260) + Gap (25) = 285px */
-            padding: 25px; 
+        .main-content {
+            margin-left: 285px;
+            /* Sidebar (260) + Gap (25) = 285px */
+            padding: 25px;
             flex: 1;
             display: flex;
             flex-direction: column;
-            gap: 25px; /* Boxes ke beech ka vertical gap */
+            gap: 25px;
+            /* Boxes ke beech ka vertical gap */
         }
+
         /* ------------------------------------------ */
 
         .top-header {
-            display: flex; justify-content: space-between; align-items: center;
-            background: var(--white); padding: 15px 25px; border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--white);
+            padding: 15px 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
         .stats-grid {
-            display: grid; grid-template-columns: repeat(4, 1fr);
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
             gap: 20px;
         }
 
         .stat-card {
-            background: var(--white); padding: 25px; border-radius: 12px;
-            text-align: center; box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            background: var(--white);
+            padding: 25px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
-        .stat-card h1 { margin: 0; font-size: 32px; color: var(--primary-blue); }
-        .stat-card p { margin: 5px 0 0; color: #333; font-weight: bold; }
+        .stat-card h1 {
+            margin: 0;
+            font-size: 32px;
+            color: var(--primary-blue);
+        }
+
+        .stat-card p {
+            margin: 5px 0 0;
+            color: #333;
+            font-weight: bold;
+        }
 
         .section-box {
-            background: var(--white); padding: 25px; border-radius: 12px;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+            background: var(--white);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         }
 
         .section-title {
-            font-size: 18px; font-weight: bold; color: var(--primary-blue);
-            border-left: 5px solid var(--secondary-blue); padding-left: 12px;
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--primary-blue);
+            border-left: 5px solid var(--secondary-blue);
+            padding-left: 12px;
             margin-bottom: 25px;
         }
 
-        .analysis-grid { display: grid; grid-template-columns: 280px 1fr; gap: 40px; align-items: center; }
-        .chart-container { width: 100%; max-width: 250px; }
+        .analysis-grid {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 40px;
+            align-items: center;
+        }
 
-        .progress-label { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px; font-weight: bold;}
-        .progress-bar-container { background: #eee; border-radius: 10px; height: 10px; margin-bottom: 20px; overflow: hidden; }
-        .progress-fill { height: 100%; border-radius: 10px; }
+        .chart-container {
+            width: 100%;
+            max-width: 250px;
+        }
 
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #f8f9fa; padding: 15px; text-align: left; color: #555; }
-        td { padding: 15px; border-top: 1px solid #eee; font-size: 14px; }
-        
-        .status-red { color: var(--danger-red); font-weight: bold; }
+        .progress-label {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+            font-size: 14px;
+            font-weight: bold;
+        }
+
+        .progress-bar-container {
+            background: #eee;
+            border-radius: 10px;
+            height: 10px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 10px;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: #f8f9fa;
+            padding: 15px;
+            text-align: left;
+            color: #555;
+        }
+
+        td {
+            padding: 15px;
+            border-top: 1px solid #eee;
+            font-size: 14px;
+        }
+
+        .status-red {
+            color: var(--danger-red);
+            font-weight: bold;
+        }
+
         .btn-action {
-            background: var(--secondary-blue); color: white; border: none;
-            padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: bold;
+            background: var(--secondary-blue);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
         }
     </style>
 </head>
+
 <body oncontextmenu="return false;">
 
     <div id="login-overlay">
@@ -168,11 +275,11 @@
                 <div class="nav-item">Failure (NC) Analysis</div>
                 <div class="nav-item">System Settings</div>
             </div>
-            
+
             <div class="logout-section">
-                <div class="nav-item" 
-                     style="color: #ffbaba; background: rgba(255,0,0,0.1); font-weight: 800; text-align: center; border: 1px solid rgba(255,0,0,0.3);" 
-                     onclick="location.reload()">
+                <div class="nav-item"
+                    style="color: #ffbaba; background: rgba(255,0,0,0.1); font-weight: 800; text-align: center; border: 1px solid rgba(255,0,0,0.3);"
+                    onclick="location.reload()">
                     🔒 LOGOUT
                 </div>
             </div>
@@ -184,14 +291,28 @@
                     <p style="margin:0; font-weight:bold; color:#333;">Welcome, Head of Department (HOD)</p>
                     <div id="live-clock" style="color:var(--secondary-blue); font-weight:bold;"></div>
                 </div>
-                <button style="background:var(--secondary-blue); color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; cursor:pointer;">Download Monthly Audit</button>
+                <button
+                    style="background:var(--secondary-blue); color:white; border:none; padding:10px 20px; border-radius:8px; font-weight:bold; cursor:pointer;">Download
+                    Monthly Audit</button>
             </div>
 
             <div class="stats-grid">
-                <div class="stat-card"><h1>245</h1><p>Total Inspections</p></div>
-                <div class="stat-card"><h1 style="color: var(--success-green);">92.4%</h1><p>Quality Compliance</p></div>
-                <div class="stat-card"><h1 style="color: var(--warning-orange);">08</h1><p>SLA Violations</p></div>
-                <div class="stat-card"><h1>15</h1><p>Live Projects</p></div>
+                <div class="stat-card">
+                    <h1>245</h1>
+                    <p>Total Inspections</p>
+                </div>
+                <div class="stat-card">
+                    <h1 style="color: var(--success-green);">92.4%</h1>
+                    <p>Quality Compliance</p>
+                </div>
+                <div class="stat-card">
+                    <h1 style="color: var(--warning-orange);">08</h1>
+                    <p>SLA Violations</p>
+                </div>
+                <div class="stat-card">
+                    <h1>15</h1>
+                    <p>Live Projects</p>
+                </div>
             </div>
 
             <div class="section-box">
@@ -201,13 +322,20 @@
                         <canvas id="ncChart"></canvas>
                     </div>
                     <div>
-                        <p style="font-weight: bold; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px;">Root Cause Distribution</p>
+                        <p style="font-weight: bold; border-bottom: 2px solid #f0f0f0; padding-bottom: 10px;">Root Cause
+                            Distribution</p>
                         <div class="progress-label"><span>Workmanship Issues</span> <span>45%</span></div>
-                        <div class="progress-bar-container"><div class="progress-fill" style="width: 45%; background: var(--primary-blue);"></div></div>
+                        <div class="progress-bar-container">
+                            <div class="progress-fill" style="width: 45%; background: var(--primary-blue);"></div>
+                        </div>
                         <div class="progress-label"><span>Material Sub-standard</span> <span>30%</span></div>
-                        <div class="progress-bar-container"><div class="progress-fill" style="width: 30%; background: var(--secondary-blue);"></div></div>
+                        <div class="progress-bar-container">
+                            <div class="progress-fill" style="width: 30%; background: var(--secondary-blue);"></div>
+                        </div>
                         <div class="progress-label"><span>Drawing/Design Error</span> <span>25%</span></div>
-                        <div class="progress-bar-container"><div class="progress-fill" style="width: 25%; background: var(--danger-red);"></div></div>
+                        <div class="progress-bar-container">
+                            <div class="progress-fill" style="width: 25%; background: var(--danger-red);"></div>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -225,8 +353,20 @@
                         </tr>
                     </thead>
                     <tbody>
-                        <tr><td>Nyati ERA</td><td>Tower A - Reinforcement</td><td>QE (Quality)</td><td class="status-red">48 Hours</td><td><button class="btn-action">Send Warning</button></td></tr>
-                        <tr><td>Nyati Esteban II</td><td>Wing B - Brickwork</td><td>SE (Site)</td><td class="status-red">36 Hours</td><td><button class="btn-action">Send Alert</button></td></tr>
+                        <tr>
+                            <td>Nyati ERA</td>
+                            <td>Tower A - Reinforcement</td>
+                            <td>QE (Quality)</td>
+                            <td class="status-red">48 Hours</td>
+                            <td><button class="btn-action">Send Warning</button></td>
+                        </tr>
+                        <tr>
+                            <td>Nyati Esteban II</td>
+                            <td>Wing B - Brickwork</td>
+                            <td>SE (Site)</td>
+                            <td class="status-red">36 Hours</td>
+                            <td><button class="btn-action">Send Alert</button></td>
+                        </tr>
                     </tbody>
                 </table>
             </div>
@@ -237,7 +377,7 @@
         function login() {
             const u = document.getElementById('userid').value;
             const p = document.getElementById('pass').value;
-            if(u === "hod@nyati" && p === "nyati2026") {
+            if (u === "hod@nyati" && p === "nyati2026") {
                 document.getElementById('login-overlay').style.display = 'none';
                 document.getElementById('dashboard-wrapper').style.display = 'flex';
                 setTimeout(initChart, 100);
@@ -268,4 +408,5 @@
         }
     </script>
 </body>
+
 </html>
