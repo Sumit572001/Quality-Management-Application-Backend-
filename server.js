@@ -135,22 +135,21 @@ app.get('/api/history-reports', async (req, res) => {
     }
 });
 
-app.get('/api/passed-items', async (req, res) => {
+app.get('/api/passed-checkpoints', async (req, res) => {
     try {
-        const { block, floor, unitType, location } = req.query;
+        const { block, floor, unitType, location, user } = req.query;
         if (!block || !floor) {
-            return res.status(400).json({ error: "Block and Floor info missing" });
+            return res.status(400).json({ error: "Missing required parameters" });
         }
 
-        // Find reports for this block/floor first
-        const reports = await Submission.find({ block, floor });
+        // Find reports matching location and user
+        const query = { block, floor, submittedBy: user };
+        const reports = await Submission.find(query);
 
-        // Helper to normalize empty values for comparison
         const normalize = (val) => (val || '').toString().trim();
         const searchUnit = normalize(unitType);
         const searchLoc = normalize(location);
 
-        // Filter for specific unit/location and extract passed questions
         const passedQuestions = new Set();
         reports.forEach(report => {
             const reportUnit = normalize(report.unitType);
@@ -167,10 +166,9 @@ app.get('/api/passed-items', async (req, res) => {
             }
         });
 
-        console.log(`Found ${passedQuestions.size} passed items for ${block}/${floor}/${unitType}/${location}`);
-        res.json(Array.from(passedQuestions));
+        res.json({ passedQuestions: Array.from(passedQuestions) });
     } catch (err) {
-        res.status(500).json({ error: "Passed items fetch error: " + err.message });
+        res.status(500).json({ error: "Passed checkpoints fetch error: " + err.message });
     }
 });
 

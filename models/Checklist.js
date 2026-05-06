@@ -9,6 +9,7 @@ const submissionSchema = new mongoose.Schema({
     projectName: String,
     block: String,
     floor: String,
+    unitType: String,
     location: String,
     submittedBy: String,
     // ✅ YAHAN ADD KIYA HAI: Jo QE approve karega uska naam yahan save hoga
