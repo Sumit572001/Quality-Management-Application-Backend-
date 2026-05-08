@@ -142,33 +142,49 @@ app.get('/api/passed-checkpoints', async (req, res) => {
             return res.status(400).json({ error: "Missing required parameters" });
         }
 
-        // Find reports matching location and user
-        const query = { block, floor, submittedBy: user };
+        // Find reports for this block/floor
+        const query = { block, floor };
         const reports = await Submission.find(query);
 
-        const normalize = (val) => (val || '').toString().trim();
+        const normalize = (val) => (val || '').toString().trim().toLowerCase();
         const searchUnit = normalize(unitType);
         const searchLoc = normalize(location);
+        const searchUser = normalize(user);
 
         const passedQuestions = new Set();
+        const rejectedQuestions = new Set();
+
         reports.forEach(report => {
             const reportUnit = normalize(report.unitType);
             const reportLoc = normalize(report.location);
+            const reportUser = normalize(report.submittedBy);
 
-            if (reportUnit === searchUnit && reportLoc === searchLoc) {
+            // Match location AND user (broaden match)
+            if (reportUnit === searchUnit && reportLoc === searchLoc && reportUser === searchUser) {
                 if (report.items && Array.isArray(report.items)) {
                     report.items.forEach(item => {
-                        if (item.qeDecision === 'pass' && item.question) {
-                            passedQuestions.add(item.question.toString().trim());
+                        const questionText = item.question?.toString().trim();
+                        if (!questionText) return;
+
+                        const qeDec = (item.qeDecision || '').toString().toLowerCase();
+                        const itemStatus = (item.status || '').toString().toLowerCase();
+
+                        if (qeDec === 'pass' || itemStatus === 'passed') {
+                            passedQuestions.add(questionText);
+                        } else if (qeDec === 'fail' || qeDec === 'reject' || itemStatus === 'rejected') {
+                            rejectedQuestions.add(questionText);
                         }
                     });
                 }
             }
         });
 
-        res.json({ passedQuestions: Array.from(passedQuestions) });
+        res.json({ 
+            passedQuestions: Array.from(passedQuestions),
+            rejectedQuestions: Array.from(rejectedQuestions)
+        });
     } catch (err) {
-        res.status(500).json({ error: "Passed checkpoints fetch error: " + err.message });
+        res.status(500).json({ error: "Checkpoints fetch error: " + err.message });
     }
 });
 
@@ -364,6 +380,20 @@ app.post('/api/qe/rework-final-status', async (req, res) => {
         const report = await Submission.findById(reportId);
         if (!report) return res.status(404).json({ success: false, message: "Report nahi mili!" });
         report.status = status === 'Approved' ? 'Approved' : 'Returned';
+
+        // If Approved, we must also update the individual items' qeDecision to 'pass'
+        // so that they appear as green/cleared in the SE checklist view.
+        if (status === 'Approved' && report.items && Array.isArray(report.items)) {
+            report.items.forEach(item => {
+                const qeDec = (item.qeDecision || '').toString().toLowerCase();
+                if (qeDec === 'fail' || qeDec === 'reject') {
+                    item.qeDecision = 'pass';
+                    item.status = 'Passed'; // Update status too for consistency
+                }
+            });
+            report.markModified('items');
+        }
+
         await report.save();
         res.json({ success: true, message: `Rework ${status}!` });
     } catch (err) {
