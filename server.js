@@ -179,7 +179,7 @@ app.get('/api/passed-checkpoints', async (req, res) => {
             }
         });
 
-        res.json({ 
+        res.json({
             passedQuestions: Array.from(passedQuestions),
             rejectedQuestions: Array.from(rejectedQuestions)
         });
