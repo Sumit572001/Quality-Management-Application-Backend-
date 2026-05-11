@@ -519,6 +519,108 @@ app.delete('/api/units/:id', async (req, res) => {
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
+// ===== HOD DASHBOARD APIs =====
+
+// 1. GET /api/hod/rework-summary
+app.get('/api/hod/rework-summary', async (req, res) => {
+    try {
+        const reworks = await Submission.find({
+            status: { $in: ['Returned', 'Rework Submitted'] }
+        });
+
+        const totalReworks = reworks.length;
+        const affectedProjects = new Set();
+        let totalReworkItems = 0;
+        const projectStatsMap = {};
+
+        reworks.forEach(report => {
+            const projectName = report.projectName || 'Unknown Project';
+            affectedProjects.add(projectName);
+            if (!projectStatsMap[projectName]) {
+                projectStatsMap[projectName] = {
+                    projectName: projectName,
+                    reworkCount: 0,
+                    siteName: report.siteName || ''
+                };
+            }
+
+            if (report.items && Array.isArray(report.items)) {
+                report.items.forEach(item => {
+                    if (item.qeDecision === 'fail') {
+                        totalReworkItems++;
+                        projectStatsMap[projectName].reworkCount++;
+                    }
+                });
+            }
+        });
+
+        const projectWise = Object.values(projectStatsMap).sort((a, b) => b.reworkCount - a.reworkCount);
+
+        res.json({
+            totalReworks,
+            totalReworkItems,
+            projectWise
+        });
+    } catch (err) {
+        res.status(500).json({ error: "HOD Summary error: " + err.message });
+    }
+});
+
+// 2. GET /api/hod/project-reworks?project=PROJECT_NAME
+app.get('/api/hod/project-reworks', async (req, res) => {
+    try {
+        const { project } = req.query;
+        if (!project) return res.status(400).json({ error: "Project name missing" });
+
+        const reports = await Submission.find({
+            projectName: project,
+            'items.qeDecision': 'fail'
+        });
+
+        const categoryStatsMap = {};
+
+        reports.forEach(report => {
+            if (report.items && Array.isArray(report.items)) {
+                report.items.forEach(item => {
+                    if (item.qeDecision === 'fail') {
+                        const category = item.category || 'General';
+                        if (!categoryStatsMap[category]) {
+                            categoryStatsMap[category] = {
+                                category: category,
+                                reworkCount: 0,
+                                checkpoints: []
+                            };
+                        }
+
+                        categoryStatsMap[category].reworkCount++;
+                        categoryStatsMap[category].checkpoints.push({
+                            question: item.question,
+                            block: report.block,
+                            floor: report.floor,
+                            unitType: report.unitType,
+                            location: report.location,
+                            seName: report.submittedBy,
+                            qeName: report.qeName,
+                            date: report.date,
+                            observation: item.observation,
+                            qeRemark: item.qeRemark
+                        });
+                    }
+                });
+            }
+        });
+
+        const categoryWise = Object.values(categoryStatsMap).sort((a, b) => b.reworkCount - a.reworkCount);
+
+        res.json({
+            projectName: project,
+            categoryWise
+        });
+    } catch (err) {
+        res.status(500).json({ error: "Project rework details error: " + err.message });
+    }
+});
+
 const PORT = 5000;
 app.listen(PORT, '0.0.0.0', () => {
     console.log(`Server running on http://192.168.12.65:${PORT}`);
