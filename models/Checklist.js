@@ -25,7 +25,6 @@ const submissionSchema = new mongoose.Schema({
         contractor: { type: String, default: '' },
         targetDate: { type: String, default: '' },
         mediaUrls: [{ type: String }],
-        seDecision: { type: String, enum: ['yes', 'no', 'na'], default: null }, // ✅ SE ka Yes/No/N/A selection
         reworkRemark: { type: String, default: '' },
         reworkMediaUrls: [{ type: String }]
     }],
