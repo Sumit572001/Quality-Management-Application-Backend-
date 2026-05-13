@@ -13,7 +13,7 @@ const submissionSchema = new mongoose.Schema({
     location: String,
     submittedBy: String,
     // ✅ YAHAN ADD KIYA HAI: Jo QE approve karega uska naam yahan save hoga
-    qeName: { type: String, default: '' }, 
+    qeName: { type: String, default: '' },
     date: String,
     items: [{
         question: String,
@@ -24,7 +24,8 @@ const submissionSchema = new mongoose.Schema({
         observation: { type: String, default: '' },
         contractor: { type: String, default: '' },
         targetDate: { type: String, default: '' },
-        mediaUrls: [{ type: String }], 
+        mediaUrls: [{ type: String }],
+        seDecision: { type: String, enum: ['yes', 'no', 'na'], default: null }, // ✅ SE ka Yes/No/N/A selection
         reworkRemark: { type: String, default: '' },
         reworkMediaUrls: [{ type: String }]
     }],
