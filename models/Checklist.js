@@ -2,6 +2,7 @@ const mongoose = require('mongoose');
 
 const checklistSchema = new mongoose.Schema({
     category: String,
+    subCategory: { type: String, default: '' }, // Added for staging (Pre Construction, During, etc.)
     questionText: String
 });
 

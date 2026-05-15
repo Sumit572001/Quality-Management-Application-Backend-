@@ -68,8 +68,8 @@ app.post('/api/login', async (req, res) => {
 // --- CHECKLIST MANAGEMENT ---
 app.post('/api/add-checklist-item', async (req, res) => {
     try {
-        const { category, questionText } = req.body;
-        const newItem = new ChecklistItem({ category, questionText });
+        const { category, subCategory, questionText } = req.body;
+        const newItem = new ChecklistItem({ category, subCategory: subCategory || '', questionText });
         await newItem.save();
         res.json({ success: true, message: "Point saved!" });
     } catch (err) {
@@ -153,25 +153,34 @@ app.get('/api/passed-checkpoints', async (req, res) => {
 
         const passedQuestions = new Set();
         const rejectedQuestions = new Set();
+        const pendingQuestions = new Set();
 
         reports.forEach(report => {
             const reportUnit = normalize(report.unitType);
             const reportLoc = normalize(report.location);
             const reportUser = normalize(report.submittedBy);
 
-            // Match location AND user (broaden match)
+            // Match location AND user
             if (reportUnit === searchUnit && reportLoc === searchLoc && reportUser === searchUser) {
                 if (report.items && Array.isArray(report.items)) {
                     report.items.forEach(item => {
-                        const questionText = item.question?.toString().trim();
+                        const questionText = (item.question || '').toString().trim();
                         if (!questionText) return;
 
                         const qeDec = (item.qeDecision || '').toString().toLowerCase();
                         const itemStatus = (item.status || '').toString().toLowerCase();
 
-                        if (qeDec === 'pass' || itemStatus === 'passed') {
+                        // Priority logic for sets: Pass > Pending > Reject
+                        // 1. Check for Passed (QE decision is final)
+                        if (qeDec === 'pass') {
                             passedQuestions.add(questionText);
-                        } else if (qeDec === 'fail' || qeDec === 'reject' || itemStatus === 'rejected') {
+                        } 
+                        // 2. Check for Pending (Submission exists but report is still under review)
+                        else if (report.status === 'Pending' || report.status === 'In-Review' || report.status === 'Rework Submitted') {
+                            pendingQuestions.add(questionText);
+                        }
+                        // 3. Check for Rejected (Only if QE rejected or report is Returned with rejected status)
+                        else if (qeDec === 'fail' || qeDec === 'reject' || (itemStatus === 'rejected' && report.status === 'Returned')) {
                             rejectedQuestions.add(questionText);
                         }
                     });
@@ -179,9 +188,15 @@ app.get('/api/passed-checkpoints', async (req, res) => {
             }
         });
 
+        // Ensure unique classification based on priority: Pass > Reject > Pending
+        const finalPassed = Array.from(passedQuestions);
+        const finalRejected = Array.from(rejectedQuestions).filter(q => !passedQuestions.has(q));
+        const finalPending = Array.from(pendingQuestions).filter(q => !passedQuestions.has(q) && !rejectedQuestions.has(q));
+
         res.json({
-            passedQuestions: Array.from(passedQuestions),
-            rejectedQuestions: Array.from(rejectedQuestions)
+            passedQuestions: finalPassed,
+            rejectedQuestions: finalRejected,
+            pendingQuestions: finalPending
         });
     } catch (err) {
         res.status(500).json({ error: "Checkpoints fetch error: " + err.message });
