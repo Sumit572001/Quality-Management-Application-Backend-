@@ -174,7 +174,7 @@ app.get('/api/passed-checkpoints', async (req, res) => {
                         // 1. Check for Passed (QE decision is final)
                         if (qeDec === 'pass') {
                             passedQuestions.add(questionText);
-                        } 
+                        }
                         // 2. Check for Pending (Submission exists but report is still under review)
                         else if (report.status === 'Pending' || report.status === 'In-Review' || report.status === 'Rework Submitted') {
                             pendingQuestions.add(questionText);
