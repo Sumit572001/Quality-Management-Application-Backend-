@@ -79,7 +79,7 @@ app.post('/api/add-checklist-item', async (req, res) => {
 
 app.get('/api/checklist-items', async (req, res) => {
     try {
-        const items = await ChecklistItem.find().sort({ _id: -1 });
+        const items = await ChecklistItem.find().sort({ _id: 1 });
         res.json(items);
     } catch (err) {
         res.status(500).json({ error: err.message });
