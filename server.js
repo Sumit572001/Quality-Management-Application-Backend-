@@ -427,7 +427,7 @@ app.get('/api/my-reports', async (req, res) => {
 });
 
 // ===== ADMIN: CATEGORY APIs =====
-const categorySchema = new mongoose.Schema({ 
+const categorySchema = new mongoose.Schema({
     name: String,
     isPourCardEnabled: { type: Boolean, default: false }
 });
@@ -465,14 +465,14 @@ app.post('/api/pour-card-checkpoints', async (req, res) => {
     try {
         const { questionText } = req.body;
         const cp = await new PourCardCheckpoint({ questionText }).save();
-        
+
         // Auto-sync with all enabled categories
         const enabledCats = await Category.find({ isPourCardEnabled: true });
         for (const cat of enabledCats) {
-            await new ChecklistItem({ 
-                category: cat.name, 
-                subCategory: 'Pour Card', 
-                questionText 
+            await new ChecklistItem({
+                category: cat.name,
+                subCategory: 'Pour Card',
+                questionText
             }).save();
         }
         res.json({ success: true, cp });
@@ -484,9 +484,9 @@ app.delete('/api/pour-card-checkpoints/:id', async (req, res) => {
         const cp = await PourCardCheckpoint.findById(req.params.id);
         if (cp) {
             // Remove from all checklists
-            await ChecklistItem.deleteMany({ 
-                subCategory: 'Pour Card', 
-                questionText: cp.questionText 
+            await ChecklistItem.deleteMany({
+                subCategory: 'Pour Card',
+                questionText: cp.questionText
             });
             await PourCardCheckpoint.findByIdAndDelete(req.params.id);
         }
@@ -508,24 +508,24 @@ app.post('/api/toggle-pour-card-category', async (req, res) => {
             const checkpoints = await PourCardCheckpoint.find();
             for (const cp of checkpoints) {
                 // Avoid duplicates
-                const exists = await ChecklistItem.findOne({ 
-                    category: cat.name, 
-                    subCategory: 'Pour Card', 
-                    questionText: cp.questionText 
+                const exists = await ChecklistItem.findOne({
+                    category: cat.name,
+                    subCategory: 'Pour Card',
+                    questionText: cp.questionText
                 });
                 if (!exists) {
-                    await new ChecklistItem({ 
-                        category: cat.name, 
-                        subCategory: 'Pour Card', 
-                        questionText: cp.questionText 
+                    await new ChecklistItem({
+                        category: cat.name,
+                        subCategory: 'Pour Card',
+                        questionText: cp.questionText
                     }).save();
                 }
             }
         } else {
             // Remove all Pour Card checkpoints for this category
-            await ChecklistItem.deleteMany({ 
-                category: cat.name, 
-                subCategory: 'Pour Card' 
+            await ChecklistItem.deleteMany({
+                category: cat.name,
+                subCategory: 'Pour Card'
             });
         }
         res.json({ success: true, isPourCardEnabled: enabled });
