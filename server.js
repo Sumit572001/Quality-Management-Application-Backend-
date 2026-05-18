@@ -427,8 +427,15 @@ app.get('/api/my-reports', async (req, res) => {
 });
 
 // ===== ADMIN: CATEGORY APIs =====
-const categorySchema = new mongoose.Schema({ name: String });
-const Category = mongoose.model('Category', categorySchema);
+const categorySchema = new mongoose.Schema({ 
+    name: String,
+    isPourCardEnabled: { type: Boolean, default: false }
+});
+const Category = mongoose.models.Category || mongoose.model('Category', categorySchema);
+
+// ===== POUR CARD CHECKPOINTS =====
+const pourCardCheckpointSchema = new mongoose.Schema({ questionText: String });
+const PourCardCheckpoint = mongoose.models.PourCardCheckpoint || mongoose.model('PourCardCheckpoint', pourCardCheckpointSchema);
 
 app.get('/api/categories', async (req, res) => {
     try { res.json(await Category.find().sort({ name: 1 })); }
@@ -444,6 +451,84 @@ app.delete('/api/categories/:id', async (req, res) => {
     try {
         await Category.findByIdAndDelete(req.params.id);
         res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// ===== POUR CARD APIs =====
+app.get('/api/pour-card-checkpoints', async (req, res) => {
+    try { res.json(await PourCardCheckpoint.find()); }
+    catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/pour-card-checkpoints', async (req, res) => {
+    console.log("Adding Pour Card Checkpoint:", req.body);
+    try {
+        const { questionText } = req.body;
+        const cp = await new PourCardCheckpoint({ questionText }).save();
+        
+        // Auto-sync with all enabled categories
+        const enabledCats = await Category.find({ isPourCardEnabled: true });
+        for (const cat of enabledCats) {
+            await new ChecklistItem({ 
+                category: cat.name, 
+                subCategory: 'Pour Card', 
+                questionText 
+            }).save();
+        }
+        res.json({ success: true, cp });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.delete('/api/pour-card-checkpoints/:id', async (req, res) => {
+    try {
+        const cp = await PourCardCheckpoint.findById(req.params.id);
+        if (cp) {
+            // Remove from all checklists
+            await ChecklistItem.deleteMany({ 
+                subCategory: 'Pour Card', 
+                questionText: cp.questionText 
+            });
+            await PourCardCheckpoint.findByIdAndDelete(req.params.id);
+        }
+        res.json({ success: true });
+    } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/api/toggle-pour-card-category', async (req, res) => {
+    try {
+        const { categoryId, enabled } = req.body;
+        const cat = await Category.findById(categoryId);
+        if (!cat) return res.status(404).json({ error: "Category not found" });
+
+        cat.isPourCardEnabled = enabled;
+        await cat.save();
+
+        if (enabled) {
+            // Add all Pour Card checkpoints to this category
+            const checkpoints = await PourCardCheckpoint.find();
+            for (const cp of checkpoints) {
+                // Avoid duplicates
+                const exists = await ChecklistItem.findOne({ 
+                    category: cat.name, 
+                    subCategory: 'Pour Card', 
+                    questionText: cp.questionText 
+                });
+                if (!exists) {
+                    await new ChecklistItem({ 
+                        category: cat.name, 
+                        subCategory: 'Pour Card', 
+                        questionText: cp.questionText 
+                    }).save();
+                }
+            }
+        } else {
+            // Remove all Pour Card checkpoints for this category
+            await ChecklistItem.deleteMany({ 
+                category: cat.name, 
+                subCategory: 'Pour Card' 
+            });
+        }
+        res.json({ success: true, isPourCardEnabled: enabled });
     } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
