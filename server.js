@@ -624,9 +624,28 @@ app.delete('/api/units/:id', async (req, res) => {
 // 1. GET /api/hod/rework-summary
 app.get('/api/hod/rework-summary', async (req, res) => {
     try {
-        const reworks = await Submission.find({
-            status: { $in: ['Returned', 'Rework Submitted'] }
-        });
+        const { status, startDate, endDate } = req.query;
+        let query = {};
+
+        // Status Filter
+        if (status === 'Closed') {
+            query.status = 'Approved';
+        } else if (status === 'All') {
+            // Include both Open and Closed
+            query.status = { $in: ['Returned', 'Rework Submitted', 'Approved'] };
+        } else {
+            // Default to Open reworks
+            query.status = { $in: ['Returned', 'Rework Submitted'] };
+        }
+
+        // Date Range Filter
+        if (startDate || endDate) {
+            query.date = {};
+            if (startDate) query.date.$gte = startDate;
+            if (endDate) query.date.$lte = endDate;
+        }
+
+        const reworks = await Submission.find(query);
 
         const totalReworks = reworks.length;
         const affectedProjects = new Set();
@@ -669,13 +688,31 @@ app.get('/api/hod/rework-summary', async (req, res) => {
 // 2. GET /api/hod/project-reworks?project=PROJECT_NAME
 app.get('/api/hod/project-reworks', async (req, res) => {
     try {
-        const { project } = req.query;
+        const { project, status, startDate, endDate } = req.query;
         if (!project) return res.status(400).json({ error: "Project name missing" });
 
-        const reports = await Submission.find({
-            projectName: project,
-            'items.qeDecision': 'fail'
-        });
+        let query = { projectName: project };
+
+        // Status Filter
+        if (status === 'Closed') {
+            query.status = 'Approved';
+        } else if (status === 'All') {
+            query.status = { $in: ['Returned', 'Rework Submitted', 'Approved'] };
+        } else {
+            query.status = { $in: ['Returned', 'Rework Submitted'] };
+        }
+
+        // Date Range Filter
+        if (startDate || endDate) {
+            query.date = {};
+            if (startDate) query.date.$gte = startDate;
+            if (endDate) query.date.$lte = endDate;
+        }
+
+        // Only include reports where there's a failed item (rework)
+        query['items.qeDecision'] = 'fail';
+
+        const reports = await Submission.find(query);
 
         const categoryStatsMap = {};
 
@@ -701,9 +738,13 @@ app.get('/api/hod/project-reworks', async (req, res) => {
                             location: report.location,
                             seName: report.submittedBy,
                             qeName: report.qeName,
-                            date: report.date,
+                            openingDate: report.date,
+                            openingTime: report.submittedAt,
+                            closingDate: report.status === 'Approved' ? (report.updatedAt ? report.updatedAt.split(',')[0] : report.date) : '-',
+                            closingTime: report.status === 'Approved' ? (report.updatedAt ? report.updatedAt.split(',')[1]?.trim() : report.submittedAt) : '-',
                             observation: item.observation,
-                            qeRemark: item.qeRemark
+                            qeRemark: item.qeRemark,
+                            status: report.status
                         });
                     }
                 });
