@@ -391,26 +391,60 @@ app.post('/api/final-approve-report', upload.array('media', 50), async (req, res
 
 app.post('/api/qe/rework-final-status', async (req, res) => {
     try {
-        const { reportId, status } = req.body;
+        const { reportId, status, itemIndex } = req.body;
         const report = await Submission.findById(reportId);
         if (!report) return res.status(404).json({ success: false, message: "Report nahi mili!" });
-        report.status = status === 'Approved' ? 'Approved' : 'Returned';
 
-        // If Approved, we must also update the individual items' qeDecision to 'pass'
-        // so that they appear as green/cleared in the SE checklist view.
-        if (status === 'Approved' && report.items && Array.isArray(report.items)) {
-            report.items.forEach(item => {
-                const qeDec = (item.qeDecision || '').toString().toLowerCase();
-                if (qeDec === 'fail' || qeDec === 'reject') {
+        if (itemIndex !== undefined && itemIndex !== null) {
+            const idx = parseInt(itemIndex);
+            if (report.items && report.items[idx]) {
+                const item = report.items[idx];
+                if (status === 'Approved') {
                     item.qeDecision = 'pass';
-                    item.status = 'Passed'; // Update status too for consistency
+                    item.status = 'Passed';
+                } else {
+                    item.qeDecision = 'fail';
+                    item.status = 'Failed';
                 }
+            }
+
+            // Determine report status based on whether there are any remaining failed items
+            const hasFailedItems = report.items.some(item => {
+                const dec = (item.qeDecision || '').toString().toLowerCase();
+                return dec === 'fail' || dec === 'reject';
             });
+
+            if (!hasFailedItems) {
+                report.status = 'Approved';
+            } else {
+                if (status === 'Rejected') {
+                    report.status = 'Returned';
+                } else {
+                    if (report.status !== 'Returned') {
+                        report.status = 'Rework Submitted';
+                    }
+                }
+            }
             report.markModified('items');
+        } else {
+            report.status = status === 'Approved' ? 'Approved' : 'Returned';
+
+            // If Approved, we must also update the individual items' qeDecision to 'pass'
+            // so that they appear as green/cleared in the SE checklist view.
+            if (status === 'Approved' && report.items && Array.isArray(report.items)) {
+                report.items.forEach(item => {
+                    const qeDec = (item.qeDecision || '').toString().toLowerCase();
+                    if (qeDec === 'fail' || qeDec === 'reject') {
+                        item.qeDecision = 'pass';
+                        item.status = 'Passed'; // Update status too for consistency
+                    }
+                });
+                report.markModified('items');
+            }
         }
 
         await report.save();
-        res.json({ success: true, message: `Rework ${status}!` });
+        res.json({ success: true, message: `Rework status updated!` });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
     }
