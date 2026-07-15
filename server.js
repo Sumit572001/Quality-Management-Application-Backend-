@@ -679,7 +679,16 @@ app.get('/api/hod/rework-summary', async (req, res) => {
             if (endDate) query.date.$lte = endDate;
         }
 
-        const reworks = await Submission.find(query);
+        const allSubmissions = await Submission.find(query);
+
+        // Filter submissions to only those that actually contain rework items
+        const reworks = allSubmissions.filter(report => {
+            return report.items && report.items.some(item => 
+                item.qeDecision === 'fail' || 
+                item.qeDecision === 'reject' || 
+                (item.observation && item.observation.trim() !== '')
+            );
+        });
 
         const totalReworks = reworks.length;
         const affectedProjects = new Set();
@@ -693,13 +702,16 @@ app.get('/api/hod/rework-summary', async (req, res) => {
                 projectStatsMap[projectName] = {
                     projectName: projectName,
                     reworkCount: 0,
-                    siteName: report.siteName || ''
+                    siteName: report.siteName || '',
+                    statuses: []
                 };
             }
+            projectStatsMap[projectName].statuses.push(report.status);
 
             if (report.items && Array.isArray(report.items)) {
                 report.items.forEach(item => {
-                    if (item.qeDecision === 'fail') {
+                    const isReworkItem = item.qeDecision === 'fail' || item.qeDecision === 'reject' || (item.observation && item.observation.trim() !== '');
+                    if (isReworkItem) {
                         totalReworkItems++;
                         projectStatsMap[projectName].reworkCount++;
                     }
@@ -707,12 +719,21 @@ app.get('/api/hod/rework-summary', async (req, res) => {
             }
         });
 
-        const projectWise = Object.values(projectStatsMap).sort((a, b) => b.reworkCount - a.reworkCount);
+        const projectWise = Object.values(projectStatsMap).map(p => {
+            const isAllApproved = p.statuses.every(s => s === 'Approved');
+            return {
+                projectName: p.projectName,
+                reworkCount: p.reworkCount,
+                siteName: p.siteName,
+                status: isAllApproved ? 'Approved' : 'Open'
+            };
+        }).sort((a, b) => b.reworkCount - a.reworkCount);
 
         res.json({
             totalReworks,
             totalReworkItems,
-            projectWise
+            projectWise,
+            reworks
         });
     } catch (err) {
         res.status(500).json({ error: "HOD Summary error: " + err.message });
@@ -743,17 +764,24 @@ app.get('/api/hod/project-reworks', async (req, res) => {
             if (endDate) query.date.$lte = endDate;
         }
 
-        // Only include reports where there's a failed item (rework)
-        query['items.qeDecision'] = 'fail';
+        const allReports = await Submission.find(query);
 
-        const reports = await Submission.find(query);
+        // Filter in JS to only keep reports with actual rework items
+        const reports = allReports.filter(report => {
+            return report.items && report.items.some(item => 
+                item.qeDecision === 'fail' || 
+                item.qeDecision === 'reject' || 
+                (item.observation && item.observation.trim() !== '')
+            );
+        });
 
         const categoryStatsMap = {};
 
         reports.forEach(report => {
             if (report.items && Array.isArray(report.items)) {
                 report.items.forEach(item => {
-                    if (item.qeDecision === 'fail') {
+                    const isReworkItem = item.qeDecision === 'fail' || item.qeDecision === 'reject' || (item.observation && item.observation.trim() !== '');
+                    if (isReworkItem) {
                         const category = item.category || 'General';
                         if (!categoryStatsMap[category]) {
                             categoryStatsMap[category] = {
@@ -778,7 +806,9 @@ app.get('/api/hod/project-reworks', async (req, res) => {
                             closingTime: report.status === 'Approved' ? (report.updatedAt ? report.updatedAt.split(',')[1]?.trim() : report.submittedAt) : '-',
                             observation: item.observation,
                             qeRemark: item.qeRemark,
-                            status: report.status
+                            status: report.status,
+                            qeMediaUrls: item.mediaUrls || [],
+                            seMediaUrls: item.reworkMediaUrls || []
                         });
                     }
                 });
