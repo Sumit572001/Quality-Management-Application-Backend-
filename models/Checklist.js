@@ -28,7 +28,17 @@ const submissionSchema = new mongoose.Schema({
         mediaUrls: [{ type: String }],
         seDecision: { type: String, enum: ['yes', 'no', 'na'], default: null }, // ✅ SE ka Yes/No/N/A selection
         reworkRemark: { type: String, default: '' },
-        reworkMediaUrls: [{ type: String }]
+        reworkMediaUrls: [{ type: String }],
+        history: [{
+            round: Number,
+            date: String,
+            submittedAt: String,
+            observation: String,
+            qeRemark: String,
+            mediaUrls: [{ type: String }],
+            reworkRemark: String,
+            reworkMediaUrls: [{ type: String }]
+        }]
     }],
     submittedAt: { type: String, default: '' },
     updatedAt: { type: String, default: '' },

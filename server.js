@@ -287,6 +287,28 @@ app.post('/api/submit-rework', upload.array('media', 50), async (req, res) => {
                 if (itemFiles.length > 0) {
                     item.reworkMediaUrls = itemFiles.map(f => `/uploads/${f.filename}`);
                 }
+
+                // Update the last history entry with SE's rework details
+                if (!item.history) {
+                    item.history = [];
+                }
+                if (item.history.length > 0) {
+                    const lastHist = item.history[item.history.length - 1];
+                    lastHist.reworkRemark = item.reworkRemark;
+                    lastHist.reworkMediaUrls = item.reworkMediaUrls || [];
+                    lastHist.submittedAt = new Date().toLocaleString('en-GB', { hour12: true });
+                } else {
+                    item.history.push({
+                        round: 1,
+                        date: report.date || new Date().toLocaleDateString('en-GB'),
+                        submittedAt: new Date().toLocaleString('en-GB', { hour12: true }),
+                        observation: item.observation || '',
+                        qeRemark: item.qeRemark || '',
+                        mediaUrls: item.mediaUrls || [],
+                        reworkRemark: item.reworkRemark,
+                        reworkMediaUrls: item.reworkMediaUrls || []
+                    });
+                }
             }
         });
         report.status = 'Rework Submitted';
@@ -375,6 +397,18 @@ app.post('/api/final-approve-report', upload.array('media', 50), async (req, res
                     if (itemFiles.length > 0) {
                         dbItem.mediaUrls = itemFiles.map(f => `/uploads/${f.filename}`);
                     }
+
+                    // Initialize item rejection history
+                    dbItem.history = [{
+                        round: 1,
+                        date: new Date().toLocaleDateString('en-GB'),
+                        submittedAt: new Date().toLocaleString('en-GB', { hour12: true }),
+                        observation: dbItem.observation,
+                        qeRemark: dbItem.qeRemark,
+                        mediaUrls: dbItem.mediaUrls || [],
+                        reworkRemark: '',
+                        reworkMediaUrls: []
+                    }];
                 }
             }
         });
@@ -389,22 +423,62 @@ app.post('/api/final-approve-report', upload.array('media', 50), async (req, res
     }
 });
 
-app.post('/api/qe/rework-final-status', async (req, res) => {
+app.post('/api/qe/rework-final-status', upload.array('media', 50), async (req, res) => {
     try {
-        const { reportId, status, itemIndex } = req.body;
+        const { reportId, status, itemIndex, observation, remark } = req.body;
+        console.log("=== REWORK FINAL STATUS ===");
+        console.log("reportId:", reportId);
+        console.log("status:", status);
+        console.log("itemIndex:", itemIndex);
+        console.log("observation:", observation);
+        console.log("remark:", remark);
+        console.log("files uploaded:", req.files ? req.files.length : 0);
+
         const report = await Submission.findById(reportId);
-        if (!report) return res.status(404).json({ success: false, message: "Report nahi mili!" });
+        if (!report) {
+            console.log("REPORT NOT FOUND for ID:", reportId);
+            return res.status(404).json({ success: false, message: "Report nahi mili!" });
+        }
 
         if (itemIndex !== undefined && itemIndex !== null) {
             const idx = parseInt(itemIndex);
+            console.log("Parsed idx:", idx, "items count:", report.items ? report.items.length : 0);
             if (report.items && report.items[idx]) {
                 const item = report.items[idx];
+                console.log("Successfully matched item at index:", idx, "Question:", item.question);
                 if (status === 'Approved') {
                     item.qeDecision = 'pass';
                     item.status = 'Passed';
                 } else {
                     item.qeDecision = 'fail';
                     item.status = 'Failed';
+                    item.observation = observation || '';
+                    item.qeRemark = remark || '';
+
+                    let newMediaUrls = item.mediaUrls || [];
+                    if (req.files && req.files.length > 0) {
+                        newMediaUrls = req.files.map(f => `/uploads/${f.filename}`);
+                    }
+                    item.mediaUrls = newMediaUrls;
+
+                    item.reworkRemark = '';
+                    item.reworkMediaUrls = [];
+
+                    // Push a new rejection round into history
+                    if (!item.history) {
+                        item.history = [];
+                    }
+                    const nextRound = item.history.length + 1;
+                    item.history.push({
+                        round: nextRound,
+                        date: new Date().toLocaleDateString('en-GB'),
+                        submittedAt: new Date().toLocaleString('en-GB', { hour12: true }),
+                        observation: item.observation,
+                        qeRemark: item.qeRemark,
+                        mediaUrls: item.mediaUrls || [],
+                        reworkRemark: '',
+                        reworkMediaUrls: []
+                    });
                 }
             }
 
@@ -444,6 +518,21 @@ app.post('/api/qe/rework-final-status', async (req, res) => {
         }
 
         await report.save();
+        console.log("=== SAVED REPORT SUCCESS ===");
+        console.log("report status:", report.status);
+        if (itemIndex !== undefined && itemIndex !== null) {
+            const idx = parseInt(itemIndex);
+            if (report.items && report.items[idx]) {
+                const item = report.items[idx];
+                console.log("Saved item index:", idx);
+                console.log("Saved item observation:", item.observation);
+                console.log("Saved item qeRemark:", item.qeRemark);
+                console.log("Saved item history rounds count:", item.history ? item.history.length : 0);
+                if (item.history && item.history.length > 0) {
+                    console.log("Last history round details:", item.history[item.history.length - 1]);
+                }
+            }
+        }
         res.json({ success: true, message: `Rework status updated!` });
     } catch (err) {
         res.status(500).json({ success: false, message: err.message });
@@ -683,9 +772,9 @@ app.get('/api/hod/rework-summary', async (req, res) => {
 
         // Filter submissions to only those that actually contain rework items
         const reworks = allSubmissions.filter(report => {
-            return report.items && report.items.some(item => 
-                item.qeDecision === 'fail' || 
-                item.qeDecision === 'reject' || 
+            return report.items && report.items.some(item =>
+                item.qeDecision === 'fail' ||
+                item.qeDecision === 'reject' ||
                 (item.observation && item.observation.trim() !== '')
             );
         });
@@ -768,9 +857,9 @@ app.get('/api/hod/project-reworks', async (req, res) => {
 
         // Filter in JS to only keep reports with actual rework items
         const reports = allReports.filter(report => {
-            return report.items && report.items.some(item => 
-                item.qeDecision === 'fail' || 
-                item.qeDecision === 'reject' || 
+            return report.items && report.items.some(item =>
+                item.qeDecision === 'fail' ||
+                item.qeDecision === 'reject' ||
                 (item.observation && item.observation.trim() !== '')
             );
         });
