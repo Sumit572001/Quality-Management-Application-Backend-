@@ -296,7 +296,7 @@ app.post('/api/submit-rework', upload.array('media', 50), async (req, res) => {
                     const lastHist = item.history[item.history.length - 1];
                     lastHist.reworkRemark = item.reworkRemark;
                     lastHist.reworkMediaUrls = item.reworkMediaUrls || [];
-                    lastHist.submittedAt = new Date().toLocaleString('en-GB', { hour12: true });
+                    lastHist.reworkSubmittedAt = new Date().toLocaleString('en-GB', { hour12: true });
                 } else {
                     item.history.push({
                         round: 1,
@@ -306,7 +306,8 @@ app.post('/api/submit-rework', upload.array('media', 50), async (req, res) => {
                         qeRemark: item.qeRemark || '',
                         mediaUrls: item.mediaUrls || [],
                         reworkRemark: item.reworkRemark,
-                        reworkMediaUrls: item.reworkMediaUrls || []
+                        reworkMediaUrls: item.reworkMediaUrls || [],
+                        reworkSubmittedAt: new Date().toLocaleString('en-GB', { hour12: true })
                     });
                 }
             }
@@ -881,6 +882,22 @@ app.get('/api/hod/project-reworks', async (req, res) => {
                         }
 
                         categoryStatsMap[category].reworkCount++;
+
+                        let historyList = item.history || [];
+                        if (historyList.length === 0) {
+                            historyList = [{
+                                round: 1,
+                                date: report.date || '-',
+                                submittedAt: report.submittedAt || '-',
+                                observation: item.observation || '',
+                                qeRemark: item.qeRemark || '',
+                                mediaUrls: item.mediaUrls || [],
+                                reworkRemark: item.reworkRemark || '',
+                                reworkMediaUrls: item.reworkMediaUrls || []
+                            }];
+                        }
+                        const roundsCount = historyList.length;
+
                         categoryStatsMap[category].checkpoints.push({
                             question: item.question,
                             block: report.block,
@@ -890,14 +907,17 @@ app.get('/api/hod/project-reworks', async (req, res) => {
                             seName: report.submittedBy,
                             qeName: report.qeName,
                             openingDate: report.date,
-                            openingTime: report.submittedAt,
-                            closingDate: report.status === 'Approved' ? (report.updatedAt ? report.updatedAt.split(',')[0] : report.date) : '-',
-                            closingTime: report.status === 'Approved' ? (report.updatedAt ? report.updatedAt.split(',')[1]?.trim() : report.submittedAt) : '-',
+                            openingTime: (report.submittedAt && report.submittedAt.includes(',')) ? report.submittedAt.split(',')[1].trim() : (report.submittedAt || '-'),
+                            closingDate: report.status === 'Approved' ? (report.updatedAt ? report.updatedAt.split(',')[0].trim() : report.date) : '-',
+                            closingTime: report.status === 'Approved' ? (report.updatedAt ? (report.updatedAt.includes(',') ? report.updatedAt.split(',')[1].trim() : report.updatedAt) : '-') : '-',
                             observation: item.observation,
                             qeRemark: item.qeRemark,
+                            reworkRemark: item.reworkRemark || '',
                             status: report.status,
                             qeMediaUrls: item.mediaUrls || [],
-                            seMediaUrls: item.reworkMediaUrls || []
+                            seMediaUrls: item.reworkMediaUrls || [],
+                            history: historyList,
+                            reworkCount: roundsCount
                         });
                     }
                 });
